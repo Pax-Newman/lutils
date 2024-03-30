@@ -3,21 +3,26 @@
 ---@alias option {help : string, default : any?}
 ---@alias options {[string] : option}
 ---@alias parsedOptions {[string] : string}
+---@alias action fun(opts?: parsedOptions)
+---@alias command {action : action, options : options | nil, help : string}
 
 -- A simple command runner to make writing build/dev scripts easier
----@class Command
----@field commands table<string, {action : fun() | fun(opts: parsedOptions), options : options | nil, help : string}>
-local Command = {}
+---@class Runner
+---@field commands table<string, {action : action, options : options | nil, help : string}>
+local Runner = {}
 
-function Command.new(setup)
+---Create a new command runner
+---@param setup? {commands? : {[string] : command}}
+---@return Runner
+function Runner.new(setup)
    setup = setup or {}
 
    local config = {
       commands = setup.commands or {},
    }
 
-   local command = setmetatable(config, Command)
-   Command.__index = Command
+   local command = setmetatable(config, Runner)
+   Runner.__index = Runner
 
    command:add("help", "Displays this help message", function()
       -- Sort the keys so we have a consistent order
@@ -53,9 +58,9 @@ end
 ---@param name string Name of the command
 ---@param help string Help string to display for the command
 ---@param options? options
----@param action fun(opts?: parsedOptions) Function to run when the command is called
----@overload fun(self: Command, name: string, help: string, action: fun(opts?: parsedOptions))
-function Command:add(name, help, options, action)
+---@param action action Function to run when the command is called
+---@overload fun(self: Runner, name: string, help: string, action: action)
+function Runner:add(name, help, options, action)
    if type(options) == "function" then
       action = options
       options = {}
@@ -69,7 +74,7 @@ function Command:add(name, help, options, action)
 end
 
 ---Display help message
-function Command:help()
+function Runner:help()
    self.commands.help.action()
 end
 
@@ -78,8 +83,8 @@ end
 ---@param v? any
 ---@param message string? | nil
 ---@return any
----@overload fun(self: Command, v: any): any
-function Command:error(v, message)
+---@overload fun(self: Runner, v: any): any
+function Runner:error(v, message)
    if not v then
       print(message)
       self:help()
@@ -90,7 +95,7 @@ end
 
 ---Run one or more commands as specific in args
 ---@param args string[]
-function Command:run(args)
+function Runner:run(args)
    self:error(#args > 0, "No commands given")
 
    ---@type string[]
@@ -144,4 +149,4 @@ function Command:run(args)
    end
 end
 
-return Command
+return Runner
