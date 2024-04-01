@@ -1,4 +1,7 @@
 ---- An experiment on DSLs and backend html generation
+package.path = package.path .. ";?.lua"
+
+local fenv = require("fenv")
 
 ---Options for creating a new element
 ---@alias opts { singleton? : boolean }
@@ -76,7 +79,7 @@ end
 
 ---Renders an HTML chunk
 ---@param partial partial
----@param writer fun(str: string) Handles the render html output, will be called multiple times as the rendering occurs. If left blank, render will return a string of the rendered html
+---@param writer? fun(str: string) Handles the render html output, will be called multiple times as the rendering occurs. If left blank, render will return a string of the rendered html
 ---@param opts? table<string, any>
 ---@return nil | string
 local function render(partial, writer, opts)
@@ -108,7 +111,30 @@ local function render(partial, writer, opts)
    return out
 end
 
+---Allows you to write html without having to predefine the tags
+---@param inner fun(): partial
+---@return partial
+---Ex.
+--```lua
+--local function foo() return div { p { function(opts) return "Hello " .. opts.name end } } end
+--local fragment = html(foo) -- Build the fragment using html to build the tags
+--render(fragment, nil, { name = "Bar" }) -- We can now render the fragment as usual!
+--```
+local function html(inner)
+   fenv.setfenv(
+      inner,
+      setmetatable({}, {
+         __index = function(self, tag)
+            return Element(tag)
+         end,
+      })
+   )
+
+   return inner()
+end
+
 return {
    Element = Element,
    render = render,
+   html = html,
 }
