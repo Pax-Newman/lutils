@@ -101,10 +101,15 @@ local function render(partial, writer, opts)
 
    -- Render and gather html fragments
    for _, item in ipairs(partial) do
-      if type(item) == "string" then
+      if type(item) == "function" then
+         local result = item(opts)
+         if type(result) == "table" then
+            render(result, writer, opts)
+         else
+            writer(result)
+         end
+      else
          writer(item)
-      elseif type(item) == "function" then
-         writer(item(opts))
       end
    end
 
