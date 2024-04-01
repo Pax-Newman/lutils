@@ -133,8 +133,43 @@ local function html(inner)
    return inner()
 end
 
+---Retrieves a render-time parameter
+---@param param string
+---@param default any Fallback if opts.param == nil
+---@return fun(opts: table<string, any>): any
+local function get(param, default)
+   assert(type(param) == "string", "item should be a string")
+   return function(opts)
+      local val = opts[param]
+      assert(val or default, "%s was found to be nil with no default set")
+      return opts[param] or default
+   end
+end
+
+---Format a string using parameters passed in at render time
+---@param fstring string
+---@param params (string | codepiece)[]
+---@return fun(opts: table<string, any>): string
+local function format(fstring, params)
+   return function(opts)
+      local vals = {}
+      for _, param in ipairs(params) do
+         if type(param) == "function" then
+            table.insert(vals, param(opts))
+         else
+            local val = opts[param]
+            assert(val, "%s was a nil value while formatting" % { param })
+            table.insert(vals, opts[param])
+         end
+      end
+      return fstring % vals
+   end
+end
+
 return {
    Element = Element,
    render = render,
    html = html,
+   format = format,
+   get = get,
 }
