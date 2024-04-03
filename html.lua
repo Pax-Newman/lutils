@@ -176,8 +176,17 @@ local singletons = {
    wbr = true,
 }
 
+local cache = {}
+
 return setmetatable({}, {
    __index = function(self, idx)
-      return exports[idx] or Element(idx, { singleton = singletons[idx] })
+      if exports[idx] then
+         return exports[idx]
+      elseif cache[idx] then
+         return cache[idx]
+      else
+         cache[idx] = Element(idx, { singleton = singletons[idx] })
+         return cache[idx]
+      end
    end,
 })
