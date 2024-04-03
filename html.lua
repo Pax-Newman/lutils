@@ -179,7 +179,7 @@ local singletons = {
 local cache = {}
 
 return setmetatable({}, {
-   __index = function(self, idx)
+   __index = function(_, idx)
       if exports[idx] then
          return exports[idx]
       elseif cache[idx] then
