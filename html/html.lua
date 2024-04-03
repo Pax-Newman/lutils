@@ -5,7 +5,7 @@
 ---Partially rendered html piece
 ---@alias partial (string|fun(opts: table<string, any>): string)[]
 ---A piece of dynamic rendering code in an html partial
----@alias codepiece fun(opts?: table<string, any>): string
+---@alias codepiece fun(opts?: table<string, any>): string | partial
 
 local function join(arr1, arr2)
    for i = 1, #arr2 do
@@ -124,7 +124,7 @@ local function get(param, default)
    return function(opts)
       local val = opts[param]
       assert(val or default, "%s was found to be nil with no default set")
-      return opts[param] or default
+      return val or default
    end
 end
 
