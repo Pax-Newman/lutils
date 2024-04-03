@@ -1,7 +1,4 @@
 ---- An experiment on DSLs and backend html generation
-package.path = package.path .. ";?.lua"
-
-local fenv = require("fenv")
 
 ---Options for creating a new element
 ---@alias opts { singleton? : boolean }
