@@ -47,6 +47,8 @@ local function Element(tag, opts)
          if type(index) == "string" then
             -- If the key is a string, then it's an attribute
             -- attributes = attributes .. string.format(' %s="%s"', index:gsub("_", "-"), value)
+            -- NOTE: Consider reducing number of calls to appendChunk, think about letting that func take
+            -- multiple string params that all get joined
             appendChunk(attributes, string.format(' %s="', index:gsub("_", "-")))
             appendChunk(attributes, value)
             appendChunk(attributes, '"')
@@ -79,12 +81,12 @@ end
 
 ---Renders an HTML chunk
 ---@param partial partial
----@param writer? fun(str: string) Handles the render html output, will be called multiple times as the rendering occurs. If left blank, render will return a string of the rendered html
+---@param writer? fun(str: string) Handles the render html output, will be called multiple times as the rendering occurs. If left nil, render will return a string of the rendered html
 ---@param opts? table<string, any>
 ---@return nil | string
 local function render(partial, writer, opts)
    local out = nil
-   if not writer then
+   if writer == nil then
       out = ""
       writer = function(str)
          out = out .. str
@@ -114,28 +116,6 @@ local function render(partial, writer, opts)
    end
 
    return out
-end
-
----Allows you to write html without having to predefine the tags
----@param inner fun(): partial
----@return partial
----Ex.
---```lua
---local function foo() return div { p { function(opts) return "Hello " .. opts.name end } } end
---local fragment = html(foo) -- Build the fragment using html to build the tags
---render(fragment, nil, { name = "Bar" }) -- We can now render the fragment as usual!
---```
-local function html(inner)
-   fenv.setfenv(
-      inner,
-      setmetatable({}, {
-         __index = function(self, tag)
-            return Element(tag)
-         end,
-      })
-   )
-
-   return inner()
 end
 
 ---Retrieves a render-time parameter
@@ -171,10 +151,33 @@ local function format(fstring, params)
    end
 end
 
-return {
-   Element = Element,
+local exports = {
    render = render,
-   html = html,
    format = format,
    get = get,
 }
+
+local singletons = {
+   area = true,
+   base = true,
+   br = true,
+   col = true,
+   command = true,
+   embed = true,
+   hr = true,
+   img = true,
+   input = true,
+   keygen = true,
+   link = true,
+   meta = true,
+   param = true,
+   source = true,
+   track = true,
+   wbr = true,
+}
+
+return setmetatable({}, {
+   __index = function(self, idx)
+      return exports[idx] or Element(idx, { singleton = singletons[idx] })
+   end,
+})
