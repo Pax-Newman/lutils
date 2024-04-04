@@ -1,5 +1,10 @@
 ------ Command Runner
 
+-- TODO: Maybe move this into a different module named
+-- `makelike` since this mostly aims to replicate the
+-- behavior of make as a command runner.
+-- A proper command module could have support for sub-commands, flags, and proper options
+
 ---@alias option {help : string, default : any?}
 ---@alias options {[string] : option}
 ---@alias parsedOptions {[string] : string}

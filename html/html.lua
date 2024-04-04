@@ -40,6 +40,10 @@ local function Element(tag, opts)
       local attributes = {}
       local contents = {}
 
+      -- TODO: Consider changing from a list
+      -- to an fstring which the results of functions
+      -- can be injected into
+
       for index, value in pairs(data) do
          if type(index) == "string" then
             -- If the key is a string, then it's an attribute
