@@ -7,4 +7,5 @@ return {
    enumerable = require("enumerable"),
    command = require("command"),
    fenv = require("fenv"),
+   itertools = require("itertools"),
 }
