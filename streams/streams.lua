@@ -111,6 +111,30 @@ function Stream:filter(fn)
    return self
 end
 
+---Filters repeat values from the stream
+---@return Stream
+function Stream:distinct()
+   local prev = self.co
+
+   -- Keep track of previously seen values
+   local present = {}
+
+   self.co = coroutine.create(function()
+      local _, item = coroutine.resume(prev)
+      while item ~= nil do
+         -- Check if we've already seen this value
+         if present[item] == nil then
+            present[item] = true
+            coroutine.yield(item)
+         end
+
+         -- Otherwise continue to exhaust the stream until we find something unseen
+         _, item = coroutine.resume(prev)
+      end
+   end)
+   return self
+end
+
 ---Reduces a stream to a single value using a function
 ---@param fn fun(accumulator: any, item: any): any
 ---@return any accumulator
