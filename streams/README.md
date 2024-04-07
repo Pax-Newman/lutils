@@ -31,7 +31,7 @@ After creating a string you can start processing the stream.
 ```lua
 
 local fizzbuzz = stream { 1, 2, 3, 4, 5 }
-   :map(function(item)
+   :map(function(val)
       local result = ""
       if val % 3 == 0 then
          result = result .. "fizz"
@@ -41,8 +41,8 @@ local fizzbuzz = stream { 1, 2, 3, 4, 5 }
       end
       return val
    end)
-   :reduce(function(acc, item)
-      return acc .. "\n" .. item
+   :reduce(function(acc, val)
+      return acc .. "\n" .. val
    end)
 
 ```
