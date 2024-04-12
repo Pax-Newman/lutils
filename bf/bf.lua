@@ -272,8 +272,7 @@ end
 
 -- Accept 1 byte of input from stdin
 function Machine:input()
-   -- FIXME: This is semi-broken tbh, we read the first char of an entire line from stdin
-   self.state[self.cell] = string.byte(io.read(), 1, 1) % 256
+   self.state[self.cell] = string.byte(io.read(1)) % 256
 end
 
 function Machine:Eval(program, loop)
@@ -298,6 +297,6 @@ function Machine:Eval(program, loop)
    end
 end
 
-local vm = Machine:New()
+local test_vm = Machine:New()
 
-vm:Eval(test_program)
+test_vm:Eval(test_program)
