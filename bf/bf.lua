@@ -33,6 +33,11 @@ OPERATORS = {
    [44] = ",",
 }
 
+NEWLINES = {
+   [10] = true,
+   [13] = true,
+}
+
 ---- Parser
 
 ---@class Parser
@@ -49,8 +54,10 @@ function Parser:New(source)
    obj.source = { string.byte(source, 1, #source) }
    obj.ptr = 1
 
+   obj.row = 1
+   obj.col = 1
+
    obj.cur = obj.source[1]
-   obj.peek = obj.source[2]
 
    obj.program = {}
 
@@ -66,8 +73,7 @@ function Parser:next()
 end
 
 function Parser:error(msg)
-   -- TODO: Track row and column numbers during parsing
-   return string.format("%d:%d >> Error >> %s", 0, self.ptr, msg)
+   return string.format("%d:%d >> Error >> %s", self.row, self.col, msg)
 end
 
 function Parser:Parse()
@@ -90,8 +96,12 @@ function Parser:Parse()
 
       if OPERATORS[self.cur] ~= nil then
          table.insert(self.program, self.cur)
+      elseif NEWLINES[self.cur] then
+         self.row = self.row + 1
+         self.col = 0
       end
 
+      self.col = self.col + 1
       self:next()
    end
 
@@ -99,10 +109,6 @@ function Parser:Parse()
 end
 
 function Parser:parseLoop()
-   -- TODO: Keep track of the start position for error reporting
-   -- local row = self.row
-   -- local col = self.col
-
    local loop = {}
 
    self:next()
@@ -123,7 +129,12 @@ function Parser:parseLoop()
       -- Until then continue ingesting code into the loop
       if OPERATORS[self.cur] ~= nil then
          table.insert(loop, self.cur)
+      elseif NEWLINES[self.cur] then
+         self.row = self.row + 1
+         self.col = 0
       end
+
+      self.col = self.col + 1
       self:next()
    end
 
