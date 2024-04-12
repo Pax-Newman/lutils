@@ -271,20 +271,23 @@ end
 function Machine:PrettyPrint()
    local fmt = [[
 
-|-------|-------|-------|
-| %05d | %05d | %05d |
-|-------|-------|-------|
-|  %03d  |  %03d  |  %03d  |
-|---<---|---|---|--->---|
+|---------|-------|-------|-------|-------|-------|
+| Mem Ptr | %05d | %05d | %05d | %05d | %05d |
+|---------|-------|-------|-------|-------|-------|
+| Mem Val |  %03d  |  %03d  |  %03d  |  %03d  |  %03d  |
+|---------|---<<--|---<---|---|---|--->---|-->>---|
 ]]
-   --stylua: ignore
    local out = fmt:format(
+      self.cell - 2,
       self.cell - 1,
       self.cell,
       self.cell + 1,
+      self.cell + 2,
+      self.state[self.cell - 2] or 0,
       self.state[self.cell - 1] or 0,
       self.state[self.cell],
-      self.state[self.cell + 1] or 0
+      self.state[self.cell + 1] or 0,
+      self.state[self.cell + 2] or 0
    )
    print(out)
 end
