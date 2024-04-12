@@ -39,7 +39,7 @@ end
 
 function Parser:error(msg)
    -- TODO: Track row and column numbers during parsing
-   return print(string.format("%d:%d >> Error >> %s", 0, self.ptr, msg))
+   return string.format("%d:%d >> Error >> %s", 0, self.ptr, msg)
 end
 
 function Parser:eatValid()
@@ -52,11 +52,13 @@ function Parser:Parse()
    while self.cur ~= nil do
       -- Check for a loop
       if self.cur == "[" then
-         local err = self:parseLoop()
+         local loop, err = self:parseLoop()
          -- Stop if we encountered an error while parsing the loop
          if err then
             return nil, err
          end
+
+         table.insert(self.program, loop)
       elseif self.cur == "]" then
          -- We shouldn't ever see a closing bracket outside of parseLoop
          return nil, self:error("Unexpected ] encountered")
@@ -83,14 +85,14 @@ function Parser:parseLoop()
    while self.cur ~= nil do
       -- Recursively parse if we see a new loop
       if self.cur == "[" then
-         local err = self:parseLoop()
+         local inner, err = self:parseLoop()
          if err then
-            return err
+            return nil, err
          end
+         table.insert(loop, inner)
       -- Stop when we see a closing bracket
       elseif self.cur == "]" then
-         table.insert(self.program, loop)
-         return
+         return loop, nil
       end
 
       -- Until then continue ingesting code
@@ -100,7 +102,7 @@ function Parser:parseLoop()
       self:next()
    end
 
-   return self:error("Unclosed bracket")
+   return nil, self:error("Unclosed bracket")
 end
 
 function Parser:printInner(program, depth)
@@ -126,9 +128,14 @@ function Parser:PrettyPrint()
    self:printInner(self.program, 0)
 end
 
-local prog = "-[+]-"
+local prog = "-[[+]]-"
 
 local test_parser = Parser:New(prog)
-local test_program = test_parser:Parse()
+local test_program, err = test_parser:Parse()
+
+if err then
+   print(err)
+   os.exit(1)
+end
 
 test_parser:PrettyPrint()
