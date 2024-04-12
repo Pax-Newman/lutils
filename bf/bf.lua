@@ -42,12 +42,6 @@ function Parser:error(msg)
    return string.format("%d:%d >> Error >> %s", 0, self.ptr, msg)
 end
 
-function Parser:eatValid()
-   if string.match("><+-.,", self.cur) ~= nil then
-      table.insert(self.program, self.cur)
-   end
-end
-
 function Parser:Parse()
    while self.cur ~= nil do
       -- Check for a loop
@@ -65,7 +59,9 @@ function Parser:Parse()
       end
 
       -- Ingest valid non-loop tokens
-      self:eatValid()
+      if string.match("><+-.,", self.cur) ~= nil then
+         table.insert(self.program, self.cur)
+      end
 
       self:next()
    end
@@ -128,7 +124,7 @@ function Parser:PrettyPrint()
    self:printInner(self.program, 0)
 end
 
-local prog = "-[[+]]-"
+local prog = "><+_.hey there this is a comment lol,-[[+]]-"
 
 local test_parser = Parser:New(prog)
 local test_program, err = test_parser:Parse()
