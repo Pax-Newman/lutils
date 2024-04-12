@@ -76,6 +76,16 @@ function Parser:error(msg)
    return string.format("%d:%d >> Error >> %s", self.row, self.col, msg)
 end
 
+function Parser:isValid()
+   if OPERATORS[self.cur] ~= nil then
+      return true
+   elseif NEWLINES[self.cur] then
+      self.row = self.row + 1
+      self.col = 0
+   end
+   return false
+end
+
 function Parser:Parse()
    while self.cur ~= nil do
       -- Check for a loop
@@ -93,12 +103,8 @@ function Parser:Parse()
       end
 
       -- Ingest valid non-loop tokens
-
-      if OPERATORS[self.cur] ~= nil then
+      if self:isValid() then
          table.insert(self.program, self.cur)
-      elseif NEWLINES[self.cur] then
-         self.row = self.row + 1
-         self.col = 0
       end
 
       self.col = self.col + 1
@@ -127,11 +133,8 @@ function Parser:parseLoop()
       end
 
       -- Until then continue ingesting code into the loop
-      if OPERATORS[self.cur] ~= nil then
+      if self:isValid() then
          table.insert(loop, self.cur)
-      elseif NEWLINES[self.cur] then
-         self.row = self.row + 1
-         self.col = 0
       end
 
       self.col = self.col + 1
@@ -205,7 +208,7 @@ end
 -- Increment byte
 function Machine:binc()
    -- Overflow to 0 for byte simulation
-   self.state[self.cell] = self.state[self.cell] + 1 % 256
+   self.state[self.cell] = (self.state[self.cell] + 1) % 256
 end
 
 -- Decrement byte
