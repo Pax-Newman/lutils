@@ -211,6 +211,7 @@ test_parser:PrettyPrint()
 ---@class Machine
 ---@field cell integer
 ---@field state integer[]
+---@field opMap table<integer, function>
 local Machine = {}
 
 function Machine:New()
@@ -229,6 +230,8 @@ function Machine:New()
 
    setmetatable(obj, self)
    self.__index = self
+
+   return obj
 end
 
 -- Increment byte
@@ -272,3 +275,29 @@ function Machine:input()
    -- FIXME: This is semi-broken tbh, we read the first char of an entire line from stdin
    self.state[self.cell] = string.byte(io.read(), 1, 1) % 256
 end
+
+function Machine:Eval(program, loop)
+   loop = loop or false
+
+   if loop and self.state[self.cell] == 0 then
+      return
+   end
+
+   ::begin::
+
+   for _, op in ipairs(program) do
+      if type(op) == "table" then
+         self:Eval(op, true)
+      else
+         self.opMap[op](self)
+      end
+   end
+
+   if loop and self.state[self.cell] > 0 then
+      goto begin
+   end
+end
+
+local vm = Machine:New()
+
+vm:Eval(test_program)
