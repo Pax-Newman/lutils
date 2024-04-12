@@ -1,5 +1,38 @@
 ---- An attempt to create a Brainfuck virtual machine
 
+---- Consts
+
+TOKENS = {
+   [">"] = 62,
+   ["<"] = 60,
+   ["+"] = 43,
+   ["-"] = 45,
+   ["."] = 46,
+   [","] = 44,
+   ["["] = 91,
+   ["]"] = 93,
+}
+
+CHARMAP = {
+   [62] = ">",
+   [60] = "<",
+   [43] = "+",
+   [45] = "-",
+   [46] = ".",
+   [44] = ",",
+   [91] = "[",
+   [93] = "]",
+}
+
+OPERATORS = {
+   [62] = ">",
+   [60] = "<",
+   [43] = "+",
+   [45] = "-",
+   [46] = ".",
+   [44] = ",",
+}
+
 ---- Parser
 
 ---@class Parser
@@ -12,20 +45,6 @@ local Parser = {}
 
 function Parser:New(source)
    local obj = {}
-
-   obj.opmap = {
-      [62] = ">",
-      [60] = "<",
-      [43] = "+",
-      [45] = "-",
-      [46] = ".",
-      [44] = ",",
-   }
-
-   obj.loopmap = {
-      [91] = "[",
-      [93] = "]",
-   }
 
    obj.source = { string.byte(source, 1, #source) }
    obj.ptr = 1
@@ -69,7 +88,7 @@ function Parser:Parse()
 
       -- Ingest valid non-loop tokens
 
-      if self.opmap[self.cur] ~= nil then
+      if OPERATORS[self.cur] ~= nil then
          table.insert(self.program, self.cur)
       end
 
@@ -101,8 +120,8 @@ function Parser:parseLoop()
          return loop, nil
       end
 
-      -- Until then continue ingesting code
-      if self.opmap[self.cur] ~= nil then
+      -- Until then continue ingesting code into the loop
+      if OPERATORS[self.cur] ~= nil then
          table.insert(loop, self.cur)
       end
       self:next()
@@ -132,7 +151,7 @@ function Parser:printInner(program, depth)
          if space then
             out = out .. indent
          end
-         out = out .. self.opmap[node]
+         out = out .. CHARMAP[node]
          space = false
       end
    end
