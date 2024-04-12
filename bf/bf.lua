@@ -135,3 +135,69 @@ if err then
 end
 
 test_parser:PrettyPrint()
+
+---- Machine State
+
+-- Holds the current cell index
+local Cell = 0
+
+-- Holds memory cell state
+local State = { [0] = 0 }
+
+---- Operator Code
+
+-- Increment byte
+local function binc()
+   -- Overflow to 0 for byte simulation
+   State[Cell] = State[Cell] + 1 % 256
+end
+
+-- Decrement byte
+local function bdec()
+   State[Cell] = State[Cell] - 1
+   -- Underflow to 255 for byte simulation
+   if State[Cell] < 0 then
+      State[Cell] = 255
+   end
+end
+
+-- Increment pointer
+local function pinc()
+   Cell = Cell + 1
+   if not State[Cell] then
+      State[Cell] = 0
+   end
+end
+
+-- Decrement pointer
+local function pdec()
+   Cell = Cell - 1
+   if not State[Cell] then
+      State[Cell] = 0
+   end
+end
+
+-- Output 1 byte to stdout
+local function output()
+   io.write(string.char(State[Cell]))
+end
+
+-- Accept 1 byte of input from stdin
+local function input()
+   -- FIXME: This is semi-broken tbh, we read the first char of an entire line from stdin
+   State[Cell] = string.byte(io.read(), 1, 1) % 256
+end
+
+local function parse_braces() end
+
+---- Interpreter
+
+-- Map tokens to instructions
+local OpMap = {
+   [">"] = pinc,
+   ["<"] = pdec,
+   ["+"] = binc,
+   ["-"] = bdec,
+   ["."] = output,
+   [","] = input,
+}
