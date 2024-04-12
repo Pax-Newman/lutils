@@ -206,68 +206,69 @@ end
 
 test_parser:PrettyPrint()
 
----- Machine State
+---- Virtual Machine
 
--- Holds the current cell index
-local Cell = 0
+---@class Machine
+---@field cell integer
+---@field state integer[]
+local Machine = {}
 
--- Holds memory cell state
-local State = { [0] = 0 }
+function Machine:New()
+   local obj = {
+      cell = 0,
+      state = { [0] = 0 },
+      opMap = {
+         [62] = self.pinc,
+         [60] = self.pdec,
+         [43] = self.binc,
+         [45] = self.bdec,
+         [46] = self.output,
+         [44] = self.input,
+      },
+   }
 
----- Operator Code
+   setmetatable(obj, self)
+   self.__index = self
+end
 
 -- Increment byte
-local function binc()
+function Machine:binc()
    -- Overflow to 0 for byte simulation
-   State[Cell] = State[Cell] + 1 % 256
+   self.state[self.cell] = self.state[self.cell] + 1 % 256
 end
 
 -- Decrement byte
-local function bdec()
-   State[Cell] = State[Cell] - 1
-   -- Underflow to 255 for byte simulation
-   if State[Cell] < 0 then
-      State[Cell] = 255
+function Machine:bdec()
+   self.state[self.cell] = self.state[self.cell] - 1
+   -- underflow to 255 for byte simulation
+   if self.state[self.cell] < 0 then
+      self.state[self.cell] = 255
    end
 end
 
 -- Increment pointer
-local function pinc()
-   Cell = Cell + 1
-   if not State[Cell] then
-      State[Cell] = 0
+function Machine:pinc()
+   self.cell = self.cell + 1
+   if not self.state[self.cell] then
+      self.state[self.cell] = 0
    end
 end
 
 -- Decrement pointer
-local function pdec()
-   Cell = Cell - 1
-   if not State[Cell] then
-      State[Cell] = 0
+function Machine:pdec()
+   self.cell = self.cell - 1
+   if not self.state[self.cell] then
+      self.state[self.cell] = 0
    end
 end
 
 -- Output 1 byte to stdout
-local function output()
-   io.write(string.char(State[Cell]))
+function Machine:output()
+   io.write(string.char(self.state[self.cell]))
 end
 
 -- Accept 1 byte of input from stdin
-local function input()
+function Machine:input()
    -- FIXME: This is semi-broken tbh, we read the first char of an entire line from stdin
-   State[Cell] = string.byte(io.read(), 1, 1) % 256
+   self.state[self.cell] = string.byte(io.read(), 1, 1) % 256
 end
-
-local function parse_braces() end
-
----- Interpreter
-
--- Map tokens to instructions
-local OpMap = {
-   [">"] = pinc,
-   ["<"] = pdec,
-   ["+"] = binc,
-   ["-"] = bdec,
-   ["."] = output,
-   [","] = input,
-}
