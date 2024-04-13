@@ -53,7 +53,7 @@ We can also use streams in loops
 
 local str = stream "Hello World!"
    :filter(function(char)
-      if string.gmatch("aeiou", char) then
+      if string.match("aeiou", char) then
          return false
       end
       return true
