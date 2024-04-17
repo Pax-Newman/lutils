@@ -9,4 +9,5 @@ return {
    fenv = require("fenv"),
    itertools = require("itertools"),
    streams = require("streams"),
+   colorful = require("colorful"),
 }
