@@ -10,70 +10,98 @@ local function parseHex(num)
    return tonumber(r, 16), tonumber(g, 16), tonumber(b, 16)
 end
 
----@alias item { [1] : string, fg : string, bg : string, under : boolean, strike : boolean, over : boolean, bold : boolean, italic : boolean, blink : boolean, fastblink : boolean}
+local ESC = string.char(27, 91)
 
----Applies ANSI text formatting
----@param opts item | item[]
----@return string
-local function style(opts)
-   if type(opts[1]) == "string" then
-      opts = { opts }
+local function apply(codes, obj)
+   obj.val = ESC .. table.concat(codes, ";") .. "m" .. obj.val .. ESC .. "0m"
+   return obj
+end
+
+local fmtMap = {
+   bold = function(obj)
+      return apply({ 1 }, obj)
+   end,
+   italic = function(obj)
+      return apply({ 3 }, obj)
+   end,
+   under = function(obj)
+      return apply({ 4 }, obj)
+   end,
+   blink = function(obj)
+      return apply({ 5 }, obj)
+   end,
+   fastblink = function(obj)
+      return apply({ 6 }, obj)
+   end,
+   strike = function(obj)
+      return apply({ 9 }, obj)
+   end,
+   over = function(obj)
+      return apply({ 53 }, obj)
+   end,
+}
+
+local style = {}
+function style:new(str)
+   local obj = {}
+
+   setmetatable(obj, self)
+   self.__index = function(_, idx)
+      if idx == "val" then
+         return str
+      end
+
+      return fmtMap[idx](obj)
    end
 
-   local collection = {}
+   return obj
+end
 
-   for _, item in ipairs(opts) do
-      local str = assert(item[1], "Must supply a string at the first table idx")
+function style:__tostring()
+   -- PERF: Right now we're repeating a lot of opening and closing escapes
+   -- but we could instead track each code and apply them efficiently at render-time here
+   return self.val
+end
 
-      local effects = {}
+local colors = {}
+function style.SetColor(name, hex)
+   colors[name] = { parseHex(hex) }
+end
 
-      ---- Apply foreground color
-      if item.fg then
-         -- \033[38;2;<r>;<g>;<b>m     Select RGB foreground color
-         table.insert(effects, string.format("38;2;%d;%d;%d", parseHex(item.fg)))
+fmtMap.fg = function(obj)
+   local function set(_, color)
+      if type(color) == "string" then
+         local r, g, b = table.unpack(colors[color])
+         return apply({ 38, 2, r, g, b }, obj)
+      elseif type(color) == "number" then
+         local r = (color & 0xff0000) >> 16
+         local g = (color & 0x00ff00) >> 8
+         local b = (color & 0x0000ff)
+         return apply({ 38, 2, r, g, b }, obj)
       end
-
-      ---- Apply background color
-      if item.bg then
-         -- \033[48;2;<r>;<g>;<b>m     Select RGB background color
-         table.insert(effects, string.format("48;2;%d;%d;%d", parseHex(item.bg)))
-      end
-
-      if item.bold then
-         table.insert(effects, 1)
-      end
-
-      if item.italic then
-         table.insert(effects, 3)
-      end
-
-      if item.under then
-         table.insert(effects, 4)
-      end
-
-      if item.blink then
-         table.insert(effects, 5)
-      end
-
-      if item.fastblink then
-         table.insert(effects, 6)
-      end
-
-      if item.strike then
-         table.insert(effects, 9)
-      end
-
-      if item.over then
-         table.insert(effects, 53)
-      end
-
-      local eff_str = table.concat(effects, ";")
-      local esc = string.char(27, 91)
-
-      table.insert(collection, esc .. eff_str .. "m" .. str .. esc .. "0m")
    end
+   return setmetatable({}, {
+      __index = set,
+      __call = set,
+   })
+end
 
-   return table.concat(collection)
+fmtMap.bg = function(obj)
+   local function set(_, color)
+      if type(color) == "string" then
+         local r, g, b = table.unpack(colors[color])
+         return apply({ 48, 2, r, g, b }, obj)
+      elseif type(color) == "number" then
+         local r = (color & 0xff0000) >> 16
+         local g = (color & 0x00ff00) >> 8
+         local b = (color & 0x0000ff)
+         return apply({ 48, 2, r, g, b }, obj)
+      end
+   end
+   return setmetatable({}, {
+      __index = set,
+      __call = set,
+   })
 end
 
 return style
