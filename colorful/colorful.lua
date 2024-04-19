@@ -33,7 +33,6 @@ end
 local ESC = string.char(27, 91)
 
 local function apply(codes, obj)
-   print(obj)
    obj = ESC .. table.concat(codes, ";") .. "m" .. obj .. ESC .. "0m"
    return obj
 end
