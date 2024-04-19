@@ -126,4 +126,7 @@ fmtMap.bg = function(obj)
    })
 end
 
-return Style, SetColor
+return {
+   Style = Style,
+   SetColor = SetColor,
+}
