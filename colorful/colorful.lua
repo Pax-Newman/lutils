@@ -74,10 +74,6 @@ local function Style(str)
 
    local meta = debug.getmetatable(str)
    meta.__index = function(inner, idx)
-      if idx == "isFstring" then
-         return true
-      end
-
       return fmtMap[idx](inner)
    end
 
