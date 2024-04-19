@@ -32,33 +32,37 @@ end
 ---The start of any escape sequence
 local ESC = string.char(27, 91)
 
-local function apply(codes, obj)
-   obj = ESC .. table.concat(codes, ";") .. "m" .. obj .. ESC .. "0m"
-   return obj
+---Applies an escape code to a string
+---@param codes integer[]
+---@param str string
+---@return string
+local function apply(codes, str)
+   str = ESC .. table.concat(codes, ";") .. "m" .. str .. ESC .. "0m"
+   return str
 end
 
 ---Contains functions to apply an ANSI format escape sequence to text
 local fmtMap = {
-   bold = function(obj)
-      return apply({ 1 }, obj)
+   bold = function(str)
+      return apply({ 1 }, str)
    end,
-   italic = function(obj)
-      return apply({ 3 }, obj)
+   italic = function(str)
+      return apply({ 3 }, str)
    end,
-   under = function(obj)
-      return apply({ 4 }, obj)
+   under = function(str)
+      return apply({ 4 }, str)
    end,
-   blink = function(obj)
-      return apply({ 5 }, obj)
+   blink = function(str)
+      return apply({ 5 }, str)
    end,
-   fastblink = function(obj)
-      return apply({ 6 }, obj)
+   fastblink = function(str)
+      return apply({ 6 }, str)
    end,
-   strike = function(obj)
-      return apply({ 9 }, obj)
+   strike = function(str)
+      return apply({ 9 }, str)
    end,
-   over = function(obj)
-      return apply({ 53 }, obj)
+   over = function(str)
+      return apply({ 53 }, str)
    end,
 }
 
@@ -68,7 +72,8 @@ local fmtMap = {
 local function Style(str)
    assert(type(str) == "string", "Only strings can be wrapped")
 
-   debug.getmetatable(str).__index = function(inner, idx)
+   local meta = debug.getmetatable(str)
+   meta.__index = function(inner, idx)
       if idx == "isFstring" then
          return true
       end
@@ -76,6 +81,25 @@ local function Style(str)
       return fmtMap[idx](inner)
    end
 
+   meta.__mod = function(a, b)
+      assert(
+         type(a) == "string" and type(b) == "table",
+         string.format("__mod not implemented for %s and %s", type(a), type(b))
+      )
+
+      return string.format(a, table.unpack(b))
+   end
+
+   ---@class string
+   ---@field italic string Italicizes the string
+   ---@field bold string Bolds the string
+   ---@field under string Underlines the string
+   ---@field over string Overlines the string
+   ---@field strike string Strikes through the string
+   ---@field blink string Causes the string to blink slowly
+   ---@field fastblink string Causes the string to blink quicly
+   ---@field fg table<string|integer, string> | fun(color: string | integer): string Sets the foreground color
+   ---@field bg table<string|integer, string> | fun(color: string | integer): string Sets the background color
    return str
 end
 
