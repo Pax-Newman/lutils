@@ -33,11 +33,12 @@ end
 local ESC = string.char(27, 91)
 
 local function apply(codes, obj)
-   obj.val = ESC .. table.concat(codes, ";") .. "m" .. obj.val .. ESC .. "0m"
+   print(obj)
+   obj = ESC .. table.concat(codes, ";") .. "m" .. obj .. ESC .. "0m"
    return obj
 end
 
---- Contains functions to apply an ANSI format escape sequence to text
+---Contains functions to apply an ANSI format escape sequence to text
 local fmtMap = {
    bold = function(obj)
       return apply({ 1 }, obj)
@@ -62,39 +63,36 @@ local fmtMap = {
    end,
 }
 
----@class FString
----@field val string Internal string representation
----@field bg (fun(color: string | integer): FString) | table<string|integer, integer[]>
-local FString = {}
-
----Wrap a string using the FString object
+---Wraps a string with metamethods for ANSI styling
 ---@param str string
----@return FString
-function FString:new(str)
-   local obj = {}
+---@return string
+local function Style(str)
+   assert(type(str) == "string", "Only strings can be wrapped")
 
-   setmetatable(obj, self)
-   self.__index = function(_, idx)
-      if idx == "val" then
-         return str
-      elseif idx == "isFstring" then
+   debug.getmetatable(str).__index = function(inner, idx)
+      if idx == "isFstring" then
          return true
       end
 
-      return fmtMap[idx](obj)
+      return fmtMap[idx](inner)
    end
 
-   return obj
-end
-
-function FString:__tostring()
-   -- PERF: Right now we're repeating a lot of opening and closing escapes
-   -- but we could instead track each code and apply them efficiently at render-time here
-   return self.val
+   return str
 end
 
 local colors = {}
-function FString.SetColor(name, hex)
+---Register a color for later use
+---@param name string
+---@param hex string e.g. #808080
+--Ex.
+--```lua
+--SetColor('grey', '#808080')
+--
+--Style("This will be grey").fg.grey
+--
+--```
+--
+local function SetColor(name, hex)
    colors[name] = { parseHex(hex) }
 end
 
@@ -128,4 +126,4 @@ fmtMap.bg = function(obj)
    })
 end
 
-return FString
+return Style, SetColor
