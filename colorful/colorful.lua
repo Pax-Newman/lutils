@@ -1,20 +1,5 @@
 ---- ANSI Text Styling
 
----Converts a hex color string (e.g. #808080) to individual base10 values for rgb channels
----@param num string
----@return integer
----@return integer
----@return integer
-local function parseHex(num)
-   local r = num:sub(2, 3)
-   local g = num:sub(4, 5)
-   local b = num:sub(6, 7)
-
-   assert(#r == 2 and #g == 2 and #b == 2, "Improperly formatted color")
-
-   return tonumber(r, 16), tonumber(g, 16), tonumber(b, 16)
-end
-
 ---Splits a hex color integer (e.g. 0x808080) into its respective rgb channels
 ---@param color integer
 ---@return integer
@@ -102,7 +87,7 @@ end
 local colors = {}
 ---Register a color for later use
 ---@param name string
----@param hex string e.g. #808080
+---@param hex integer e.g. 0x808080
 --Ex.
 --```lua
 --SetColor('grey', '#808080')
@@ -112,7 +97,7 @@ local colors = {}
 --```
 --
 local function SetColor(name, hex)
-   colors[name] = { parseHex(hex) }
+   colors[name] = { splitHex(hex) }
 end
 
 fmtMap.fg = function(obj)
