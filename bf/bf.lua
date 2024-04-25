@@ -72,10 +72,6 @@ function Parser:next()
    self.cur = self.source[self.ptr]
 end
 
-function Parser:error(msg)
-   return string.format("%d:%d >> Error >> %s", self.row, self.col, msg)
-end
-
 function Parser:isValid()
    if OPERATORS[self.cur] ~= nil then
       return true
@@ -86,62 +82,15 @@ function Parser:isValid()
    return false
 end
 
-function Parser:Parse()
-   while self.cur ~= nil do
-      -- Check for a loop
-      if self.cur == 91 then -- [
-         local loop, err = self:parseLoop()
-         -- Stop if we encountered an error while parsing the loop
-         if err then
-            return nil, err
-         end
-
-         table.insert(self.program, loop)
-      elseif self.cur == 93 then -- ]
-         -- We shouldn't ever see a closing bracket outside of parseLoop
-         return nil, self:error("Unexpected ] encountered")
-      end
-
-      -- Ingest valid non-loop tokens
-      if self:isValid() then
-         table.insert(self.program, self.cur)
-      end
-
-      self.col = self.col + 1
-      self:next()
-   end
-
-   return self.program, nil
-end
-
-function Parser:parseLoop()
-   local loop = {}
-
+function Parser:ParseNext()
    self:next()
 
-   while self.cur ~= nil do
-      -- Recursively parse if we see a new loop
-      if self.cur == 91 then -- [
-         local inner, err = self:parseLoop()
-         if err then
-            return nil, err
-         end
-         table.insert(loop, inner)
-      -- Stop when we see a closing bracket
-      elseif self.cur == 93 then -- ]
-         return loop, nil
-      end
-
-      -- Until then continue ingesting code into the loop
-      if self:isValid() then
-         table.insert(loop, self.cur)
-      end
-
-      self.col = self.col + 1
+   -- Skip non-operator tokens
+   while self.cur ~= nil and not Parser:isValid() do
       self:next()
    end
 
-   return nil, self:error("Unclosed bracket")
+   return TOKENS[self.cur]
 end
 
 function Parser:printInner(program, depth)
@@ -183,6 +132,7 @@ end
 ---@field cell integer
 ---@field state integer[]
 ---@field opMap table<integer, function>
+---@field jumpMap table<integer, integer>
 local Machine = {}
 
 function Machine:New()
@@ -246,25 +196,38 @@ function Machine:input()
    self.state[self.cell] = string.byte(io.read(1)) % 256
 end
 
-function Machine:Eval(program, loop)
-   loop = loop or false
+---Evaluates a chunk of Brainfuck code
+---@param program string
+function Machine:Eval(program)
+   local parser = Parser:New(program)
 
-   if loop and self.state[self.cell] == 0 then
-      return
-   end
+   local prog = {}
+   local jumpMap = {}
+   local loopStack = {}
 
-   ::begin::
+   local op = parser:ParseNext()
+   while op ~= nil do
+      -- If it's an open [
+      if op == 91 then
+         table.insert(prog, op)
+         table.insert(loopStack, #prog)
+      -- If it's a close ]
+      elseif op == 93 then
+         if #loopStack == 0 then
+            print("Error, unmatched ]")
+            return
+         end
 
-   for _, op in ipairs(program) do
-      if type(op) == "table" then
-         self:Eval(op, true)
-      else
-         self.opMap[op](self)
+         local open = table.remove(loopStack, #loopStack)
+
+         -- Set locations for jumps
+         jumpMap[open] = #prog + 1
+         jumpMap[#prog] = open + 1
+
+         table.insert(prog, op)
       end
-   end
 
-   if loop and self.state[self.cell] > 0 then
-      goto begin
+      op = parser:ParseNext()
    end
 end
 
