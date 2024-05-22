@@ -205,14 +205,37 @@ function Machine:Eval(program)
    local jumpMap = {}
    local loopStack = {}
 
+   local pos = 1
+
    local op = parser:ParseNext()
+
+   -- Op should equal the next item in the program
+   -- If there's no next op in prog, then ParseNext to find the next op
+   -- If ParseNext is also nil, there is no more program
+
    while op ~= nil do
-      -- If it's an open [
-      if op == 91 then
+      -- If this is a position beyond what we've seen, add it to the parsed program
+      if pos > #prog then
          table.insert(prog, op)
+      end
+
+      -- If it opens a loop
+      if op == 91 then
+         -- Track the opening bracket
          table.insert(loopStack, #prog)
-      -- If it's a close ]
+
+         if self.state[self.cell] ~= 0 then
+            -- If we've already parsed this loop, simply jump to the end position
+            if jumpMap[pos] ~= nil then
+               pos = jumpMap[pos]
+            else
+               -- Do not eval operators til we find the end of this loop
+            end
+         end
+
+      -- If it closes a loop
       elseif op == 93 then
+         -- Insert loop into the jump map
          if #loopStack == 0 then
             print("Error, unmatched ]")
             return
@@ -224,10 +247,17 @@ function Machine:Eval(program)
          jumpMap[open] = #prog + 1
          jumpMap[#prog] = open + 1
 
-         table.insert(prog, op)
+         -- Jump to the start of the loop if cell state is 0
+         if self.state[self.cell] ~= 0 then
+            pos = jumpMap[pos]
+         end
+      else
+         self.opMap[op]()
       end
 
       op = parser:ParseNext()
+
+      ::skip_parse::
    end
 end
 
