@@ -1,8 +1,8 @@
 -- I wanted to learn about parser combinators so I'm trying to build one
 
----@alias result { success: boolean, value: any?, rest: any?}
+---@alias result { success: boolean, value: any?, rest: any?, captures?: table<string, string> }
 ---@alias combinator fun(...: string): result
----@alias atom fun(any): result
+---@alias atom fun(str: string): result
 
 local function map(arr, fun)
    local res = {}
@@ -13,7 +13,55 @@ local function map(arr, fun)
    return table.unpack(res)
 end
 
----Creates a combo that succeeds if any of its combos succeed
+local function merge(t1, t2)
+   for key, value in pairs(t2) do
+      t1[key] = value
+   end
+   return t1
+end
+
+---Specifies a capture group
+---@param name string
+---@param combo combinator
+---@param transform? fun(res: string): string
+---@return combinator
+local function capture(name, combo, transform)
+   return function(str)
+      local result = combo(str)
+
+      transform = transform or function(x)
+         return x
+      end
+
+      if result.success then
+         result.captures[name] = transform(result.value)
+
+         return {
+            success = true,
+            value = result.value,
+            rest = result.rest,
+            captures = result.captures,
+         }
+      end
+      return { success = false }
+   end
+end
+
+---Transforms the result of a combo using the provided function
+---@param combo combinator
+---@param func fun(res: result): result
+---@return combinator
+local function transform(combo, func)
+   return function(str)
+      local result = combo(str)
+      if result.success then
+         return func(result)
+      end
+      return result
+   end
+end
+
+---Returns the result of the first successful combo, or a failure if none succeed
 ---@param ... combinator
 ---@return combinator
 local function any(...)
@@ -29,14 +77,14 @@ local function any(...)
    end
 end
 
----Creates a combo that consumes an exact sequence of combos
+---Specifies an exact sequence of combos to be matched
 ---@param ... combinator
 local function sequence(...)
    ---@type combinator[]
    local combos = table.pack(...)
 
    return function(str)
-      local result = { success = true, value = "", rest = str }
+      local result = { success = true, value = "", rest = str, captures = {} }
 
       for _, combo in ipairs(combos) do
          local step = combo(result.rest)
@@ -47,15 +95,21 @@ local function sequence(...)
 
          result.value = result.value .. step.value
          result.rest = step.rest
+
+         result.captures = merge(result.captures, step.captures)
       end
 
       return result
    end
 end
 
+---Succeeds and consumes if the combo is matched at least n times
+---@param n integer
+---@param combo combinator
+---@return combinator
 local function atLeast(n, combo)
    return function(str)
-      local result = { success = false, value = "" }
+      local result = { success = false, value = "", captures = {} }
 
       local step = combo(str)
 
@@ -64,6 +118,7 @@ local function atLeast(n, combo)
       while step.success do
          result.value = result.value .. step.value
          result.rest = step.rest
+         result.captures = merge(result.captures, step.captures)
          step = combo(step.rest)
       end
 
@@ -89,6 +144,7 @@ local function optional(combo)
             success = true,
             value = "",
             rest = str,
+            captures = {},
          }
       end
    end
@@ -106,6 +162,7 @@ local function char(target)
             success = true,
             value = c,
             rest = str:sub(2),
+            captures = {},
          }
       end
       return { success = false }
@@ -123,8 +180,8 @@ end
 local alpha = anyOf "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 local word = atLeast(1, alpha)
 
-local number = atLeast(1, anyOf "1234567890")
-local hex = sequence(strSequence "0x", atLeast(1, anyOf "0123456789abcdefABCDEF"))
+local number = atLeast(1, anyOf "0123456789")
+local hex = sequence(strSequence "0x", atLeast(1, any(number, anyOf "abcdefABCDEF")))
 local octal = sequence(strSequence "0o", atLeast(1, anyOf "01234567"))
 local binary = sequence(strSequence "0b", atLeast(1, anyOf "01"))
 
