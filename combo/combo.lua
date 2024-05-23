@@ -180,12 +180,24 @@ end
 local alpha = anyOf "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 local word = atLeast(1, alpha)
 
-local number = atLeast(1, anyOf "0123456789")
+local digit = anyOf "0123456789"
+
+local number = atLeast(1, digit)
 local hex = sequence(strSequence "0x", atLeast(1, any(number, anyOf "abcdefABCDEF")))
 local octal = sequence(strSequence "0o", atLeast(1, anyOf "01234567"))
 local binary = sequence(strSequence "0b", atLeast(1, anyOf "01"))
 
 local parseKeyword = any(strSequence "let", strSequence "import")
+
+local parseTime = sequence(
+   capture("hour", any(sequence(anyOf "01", anyOf "0123456"), anyOf "123456")),
+   char ":",
+   capture("minute", sequence(digit, anyOf "123456")),
+   char ":",
+   capture("second", sequence(digit, anyOf "123456"))
+)
+
+print(parseTime("4:54:23").captures.minute)
 
 ---Tests a combinator
 ---@param name string
