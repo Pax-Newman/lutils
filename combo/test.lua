@@ -3,34 +3,49 @@ local utils = require "utils"
 local combos = require "combo"
 local sc = combos.string2string
 
+---Match an exact sequence of characters
 local function strSequence(str)
    return sc.sequence(utils.map(str:gmatch ".", sc.char))
 end
 
+---Match one of any of the characters in the string
 local function anyOf(str)
    return sc.any(utils.map(str:gmatch ".", sc.char))
 end
 
+---Match one alphabet character
 local alpha = anyOf "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
+---Match one numerical character
 local digit = anyOf "0123456789"
 
+---Match one alphanumeric character
+local alphaNum = sc.any(alpha, digit)
+
+---Match an integer of any length
 local integer = sc.atLeast(1, digit)
+
+---Match a floating point number of any length
 local float = sc.sequence(integer, sc.char ".", integer)
+
+---Match a hexadecimal number of any length of the form `0xFFFF`
 local hex = sc.transform(
    sc.sequence(strSequence "0x", sc.capture("num", sc.atLeast(1, sc.any(integer, anyOf "abcdefABCDEF")))),
+   -- Use `transform` to change the hex number into an integer
    function(res)
       if res.success then
          return {
             success = res.success,
             value = tostring(tonumber(res.captures.num, 16)),
             rest = res.rest,
-            captures = res.captures,
+            captures = {},
          }
       end
       return { success = false }
    end
 )
+
+---Match an octal number of any length of the form `0o7777`
 local octal = sc.transform(
    sc.sequence(strSequence "0o", sc.capture("num", sc.atLeast(1, anyOf "01234567"))),
    function(res)
@@ -39,26 +54,30 @@ local octal = sc.transform(
             success = res.success,
             value = tostring(tonumber(res.captures.num, 8)),
             rest = res.rest,
-            captures = res.captures,
+            captures = {},
          }
       end
       return { success = false }
    end
 )
+
+---Match a binary number of any length of the form `0b1111`
 local binary = sc.transform(sc.sequence(strSequence "0b", sc.capture("num", sc.atLeast(1, anyOf "01"))), function(res)
    if res.success then
       return {
          success = res.success,
          value = tostring(tonumber(res.captures.num, 2)),
          rest = res.rest,
-         captures = res.captures,
+         captures = {},
       }
    end
    return { success = false }
 end)
 
+---Match a number of any length and any valid format
 local number = sc.any(float, hex, octal, binary, integer)
 
+---Match any amount of whitespace
 local space = sc.optional(sc.atLeast(1, anyOf " \n\r"))
 
 local identifier = sc.sequence(alpha, sc.optional(sc.atLeast(1, sc.any(alpha, integer))))
@@ -94,6 +113,7 @@ utils.prettytable(parseStatement("let foo = 0.1").captures)
 utils.prettytable(parseStatement("import utils").captures)
 utils.prettytable(parseStatement("import utils as ut").captures)
 
+---Match a 12hour time of the form `HH(am|pm)`, `HH:MM(am|pm)`, or `HH:MM:SS(am|pm)`
 local parseTime = sc.sequence(
    sc.capture("hour", sc.any(sc.sequence(anyOf "01", anyOf "0123456"), anyOf "123456")),
    sc.optional(
