@@ -18,4 +18,16 @@ function exports.merge(t1, t2)
    return t1
 end
 
+function exports.prettytable(t)
+   for key, value in pairs(t) do
+      if type(value) == "table" then
+         print(string.format("%s: {", key))
+         exports.prettytable(value)
+         print "}"
+      else
+         print(string.format("%s: %s", key, value))
+      end
+   end
+end
+
 return exports

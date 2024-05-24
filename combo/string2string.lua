@@ -5,8 +5,7 @@ local utils = require "utils"
 local exports = {}
 
 ---@alias result { success: boolean, value: any?, rest: any?, captures?: table<string, string> }
----@alias combinator fun(string): result
----@alias atom fun(str: string): result
+---@alias combinator fun(str: string): result
 
 ---Specifies a capture group
 ---@param name string
@@ -163,9 +162,9 @@ function exports.optional(combo)
    end
 end
 
----Creates a combo that returns true if the first char of the string matches the target char
+---Returns true if the first char of the string matches the target char
 ---@param target string
----@return atom
+---@return combinator
 function exports.char(target)
    assert(type(target) == "string", "Target must be a string")
    return function(str)
