@@ -65,6 +65,15 @@ abc 'ab' --> fail
 -- We can use this to parse more complex things, like a decimal number!
 local integer = sc.atLeast(1, numeric)
 local float = sc.sequence(integer, sc.char ".", integer)
+
+-- Another powerful combinator is sc.optional
+-- This allows us to define a parser as optional, meaning that it will succeed even
+-- if nothing was parsed
+
+-- Parses an identifier, which must start with a letter, but can then contain any
+-- combination of letters and numbers
+local identifier = sc.sequence(alpha, sc.optional(sc.atLeast(1, sc.any(alpha, integer))))
+
 ```
 
 Other examples can be found in `test.lua`
