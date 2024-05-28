@@ -117,6 +117,10 @@ function exports.sequence(...)
    end
 end
 
+---Wraps a combo with a small function that converts
+---string input into an array of characters
+---@param f ComboPiece
+---@return fun(str: string): Result
 function exports.wrapStr(f)
    return function(str)
       return f(utils.strToArr(str))
