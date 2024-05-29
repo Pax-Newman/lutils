@@ -117,14 +117,52 @@ function exports.sequence(...)
    end
 end
 
+---Transforms the result of a combo using the provided function
+---@param combo ComboPiece
+---@param transform fun(res: Result): Result
+---@param onFail boolean? Apply the transformation regardless of success status (true)
+---@return ComboPiece
+function exports.mapRes(combo, transform, onFail)
+   if onFail == nil or onFail == true then
+      -- Always applies the transformation even on a failure (default)
+      return function(val)
+         return transform(combo(val))
+      end
+   else
+      -- Only applies the transformation on a success
+      return function(val)
+         local res = combo(val)
+         if res.success then
+            return transform(res)
+         end
+         return res
+      end
+   end
+end
+
+---Transforms the value of a combo using the provided function
+---@param combo ComboPiece
+---@param transform fun(val: any): any
+---@return ComboPiece
+function exports.mapVal(combo, transform)
+   return function(val)
+      local res = combo(val)
+      if res.success then
+         res.value = transform(res.value)
+         return res
+      end
+      return res
+   end
+end
+
 ---Wraps a combo with a small function that converts
 ---string input into an array of characters, allowing
 ---combos to work with string input
----@param f ComboPiece
+---@param combo ComboPiece
 ---@return fun(str: string): Result
-function exports.takeStr(f)
+function exports.takeStr(combo)
    return function(str)
-      return f(utils.strToArr(str))
+      return combo(utils.strToArr(str))
    end
 end
 
