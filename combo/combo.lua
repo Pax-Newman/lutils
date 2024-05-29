@@ -2,12 +2,7 @@
 
 local utils = require "utils"
 
----@generic T
----@class ComboInput
----@field next fun(): `T`
-
----@alias Token { type: string, literal: string }
----@alias Result { success: boolean, value: any[], rest: string, captures: table}
+---@alias Result { success: boolean, value: any[], rest: any[], captures: table}
 ---@alias ComboPiece fun(val: Array): Result
 
 local exports = {}
@@ -152,6 +147,33 @@ function exports.mapVal(combo, transform)
          return res
       end
       return res
+   end
+end
+
+---Specifies a capture group
+---@param name string
+---@param combo ComboPiece
+---@param transform? fun(res: any): any
+---@return ComboPiece
+function exports.capture(name, combo, transform)
+   return function(val)
+      local result = combo(val)
+
+      if result.success then
+         if transform then
+            result.captures[name] = transform(result.value)
+         else
+            result.captures[name] = result.value
+         end
+
+         return {
+            success = true,
+            value = result.value,
+            rest = result.rest,
+            captures = result.captures,
+         }
+      end
+      return { success = false }
    end
 end
 
