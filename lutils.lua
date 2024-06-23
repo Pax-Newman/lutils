@@ -11,4 +11,5 @@ return {
    streams = require "streams",
    colorful = require "colorful",
    combo = require "combo",
+   iterators = require "iterators",
 }
