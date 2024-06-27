@@ -133,8 +133,4 @@ function Iterator:reduce(fn, initial)
    return acc
 end
 
-local arr_iter = new { 1, 2, 3 }
-
-arr_iter:map(print)
-
 return new
