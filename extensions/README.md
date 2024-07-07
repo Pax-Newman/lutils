@@ -12,19 +12,17 @@ This let's us extend the capabilities of tables and types in Lua in a simple fas
 
 local extension = require("lutils").extensions
 
-extension {
-   -- The object whose metatable we want to extend
-   -- This needs to come first
-   "",
-
-   -- After that we can add as many extensions as we'd like!
+-- To extend something, you place the thing whose metatable you want to extend after `extension`
+-- Then define a table of everything you want to extend the metatable with
+extension "" {
 
    -- We can extend the object with new metamethods
    __mod = function(self, arr)
       return self:format(table.unpack(arr))
    end,
 
-   -- We can also add new values to the metatable's __index
+   -- We can also add new values to the metatable's __index property
+   -- Anything without `__` at the beginning will be placed into the index rather than the metatable
    has = function(self, target)
       for i in #self - #target do
          if self:sub(i, i + #target) == target then
@@ -49,9 +47,7 @@ Due to `extension` modifying the metatable, we can even use it to create custom 
 
 ```lua
 
-local MyObj = extension {
-   {},
-
+local MyObj = extension {} {
    val = 0,
 
    __tostring = function(self)
@@ -84,10 +80,7 @@ function NewUser(name)
    end
 
    -- Now we can use extension to simplify making a class by just a bit
-   return extension {
-      -- We'll just create an empty table to use as a base
-      {},
-
+   return extension {} {
       -- This is like a public field that can be freely changed
       name = name,
 
@@ -110,6 +103,6 @@ print(john.name) --> Steve
 ```
 
 Keep in mind that this isn't necessarily the best way to define a class in all scenarios.
-In fact it's likely that it'll be worse than the usual methods for many scenarios.
+In fact I'd imagine that it'll be worse than the usual methods for many scenarios.
 It's just something I noticed about `extension` and thought was interesting enough to include here.
 
