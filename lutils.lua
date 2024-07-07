@@ -12,4 +12,5 @@ return {
    colorful = require "colorful",
    combo = require "combo",
    iterators = require "iterators",
+   extension = require "extensions",
 }
